@@ -17,14 +17,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateAssistanceRequest } from "@/hooks/useAssistanceRequests";
 import { 
   MapPin, 
   Wrench, 
@@ -66,10 +60,11 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const RequestAssistance = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { createRequest, isLoading: isSubmitting } = useCreateAssistanceRequest();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -116,18 +111,44 @@ const RequestAssistance = () => {
   };
 
   const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
+    // Parse location coordinates if GPS was used
+    let locationLat: number | undefined;
+    let locationLng: number | undefined;
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    
-    toast({
-      title: "Request Submitted Successfully!",
-      description: "A mechanic will be assigned to you shortly.",
+    const coordMatch = data.location.match(/^(-?\d+\.?\d*),\s*(-?\d+\.?\d*)$/);
+    if (coordMatch) {
+      locationLat = parseFloat(coordMatch[1]);
+      locationLng = parseFloat(coordMatch[2]);
+    }
+
+    const result = await createRequest({
+      serviceType: data.serviceType,
+      name: data.name,
+      phone: data.phone,
+      location: data.location,
+      locationLat,
+      locationLng,
+      vehicleMake: data.vehicleMake,
+      vehicleModel: data.vehicleModel,
+      vehicleYear: data.vehicleYear,
+      vehicleColor: data.vehicleColor,
+      description: data.description,
     });
+
+    if (result) {
+      setRequestId(result.id);
+      setIsSuccess(true);
+      toast({
+        title: "Request Submitted Successfully!",
+        description: "A mechanic will be assigned to you shortly.",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to submit request. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isSuccess) {
@@ -150,8 +171,8 @@ const RequestAssistance = () => {
                 </p>
                 <div className="bg-secondary/50 rounded-xl p-6 mb-8">
                   <p className="text-sm text-muted-foreground mb-2">Your Request ID</p>
-                  <p className="font-heading text-2xl font-bold text-foreground">
-                    #RR{Math.random().toString(36).substr(2, 9).toUpperCase()}
+                  <p className="font-heading text-2xl font-bold text-foreground font-mono">
+                    {requestId ? `#${requestId.slice(0, 8).toUpperCase()}` : "#PENDING"}
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
