@@ -176,10 +176,14 @@ const RequestAssistance = () => {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button variant="hero" onClick={() => navigate("/")}>
-                    Return Home
+                  <Button variant="hero" onClick={() => requestId && navigate(`/track/${requestId}`)}>
+                    Track Your Request
                   </Button>
-                  <Button variant="outline" onClick={() => setIsSuccess(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setIsSuccess(false);
+                    setRequestId(null);
+                    form.reset();
+                  }}>
                     Submit Another Request
                   </Button>
                 </div>
