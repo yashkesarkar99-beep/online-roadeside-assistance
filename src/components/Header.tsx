@@ -1,11 +1,25 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Menu, X } from "lucide-react";
+import { MapPin, Phone, Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -43,6 +57,33 @@ const Header = () => {
               <Phone className="w-4 h-4" />
               <span>1-800-ROAD</span>
             </Button>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    <span className="max-w-[120px] truncate">{user.email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate("/my-requests")}>
+                    <User className="w-4 h-4 mr-2" />
+                    My Requests
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
+            )}
+            
             <Button variant="hero" size="default" onClick={() => navigate("/request")}>
               Get Help Now
             </Button>
@@ -73,6 +114,35 @@ const Header = () => {
               <a href="/#contact" className="text-foreground font-medium py-2" onClick={() => setIsMenuOpen(false)}>
                 Contact
               </a>
+              
+              {user ? (
+                <>
+                  <Button
+                    variant="outline"
+                    className="justify-start"
+                    onClick={() => { setIsMenuOpen(false); navigate("/my-requests"); }}
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    My Requests
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="justify-start"
+                    onClick={() => { setIsMenuOpen(false); handleSignOut(); }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => { setIsMenuOpen(false); navigate("/auth"); }}
+                >
+                  Sign In
+                </Button>
+              )}
+              
               <Button variant="hero" className="mt-2" onClick={() => { setIsMenuOpen(false); navigate("/request"); }}>
                 Get Help Now
               </Button>
