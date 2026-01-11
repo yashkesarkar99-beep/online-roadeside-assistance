@@ -112,7 +112,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_mechanic: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       request_status:
