@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2, MapPin, Clock, Navigation } from "lucide-react";
 
 interface LocationMapProps {
   customerLat: number;
@@ -10,6 +10,11 @@ interface LocationMapProps {
   mechanicLat?: number | null;
   mechanicLng?: number | null;
   showMechanic?: boolean;
+}
+
+interface RouteInfo {
+  duration: number; // in minutes
+  distance: number; // in km
 }
 
 const LocationMap = ({
@@ -23,8 +28,124 @@ const LocationMap = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const customerMarker = useRef<mapboxgl.Marker | null>(null);
   const mechanicMarker = useRef<mapboxgl.Marker | null>(null);
+  const mapboxToken = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+
+  const fetchRoute = async (
+    startLng: number,
+    startLat: number,
+    endLng: number,
+    endLat: number
+  ) => {
+    if (!map.current || !mapboxToken.current) return;
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&overview=full&access_token=${mapboxToken.current}`
+      );
+
+      const data = await response.json();
+
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const coordinates = route.geometry.coordinates;
+
+        // Update route info
+        setRouteInfo({
+          duration: Math.round(route.duration / 60), // Convert seconds to minutes
+          distance: Math.round((route.distance / 1000) * 10) / 10, // Convert meters to km
+        });
+
+        // Add or update the route layer
+        if (map.current.getSource("route")) {
+          (map.current.getSource("route") as mapboxgl.GeoJSONSource).setData({
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: coordinates,
+            },
+          });
+        } else {
+          map.current.addSource("route", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "LineString",
+                coordinates: coordinates,
+              },
+            },
+          });
+
+          // Add route background (wider, for outline effect)
+          map.current.addLayer({
+            id: "route-background",
+            type: "line",
+            source: "route",
+            layout: {
+              "line-join": "round",
+              "line-cap": "round",
+            },
+            paint: {
+              "line-color": "#1e40af",
+              "line-width": 8,
+              "line-opacity": 0.4,
+            },
+          });
+
+          // Add main route line
+          map.current.addLayer({
+            id: "route",
+            type: "line",
+            source: "route",
+            layout: {
+              "line-join": "round",
+              "line-cap": "round",
+            },
+            paint: {
+              "line-color": "#3b82f6",
+              "line-width": 5,
+            },
+          });
+
+          // Add animated dashes
+          map.current.addLayer({
+            id: "route-dashes",
+            type: "line",
+            source: "route",
+            layout: {
+              "line-join": "round",
+              "line-cap": "round",
+            },
+            paint: {
+              "line-color": "#60a5fa",
+              "line-width": 3,
+              "line-dasharray": [0, 4, 3],
+            },
+          });
+        }
+
+        // Fit map to show entire route
+        const bounds = coordinates.reduce(
+          (bounds: mapboxgl.LngLatBounds, coord: [number, number]) => {
+            return bounds.extend(coord);
+          },
+          new mapboxgl.LngLatBounds(coordinates[0], coordinates[0])
+        );
+
+        map.current.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 15,
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching route:", err);
+    }
+  };
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -40,6 +161,7 @@ const LocationMap = ({
           throw new Error("Failed to load map configuration");
         }
 
+        mapboxToken.current = data.token;
         mapboxgl.accessToken = data.token;
 
         map.current = new mapboxgl.Map({
@@ -89,9 +211,10 @@ const LocationMap = ({
             )
             .addTo(map.current!);
 
-          // Add mechanic marker if available (blue pin with wrench)
+          // Add mechanic marker and route if available
           if (showMechanic && mechanicLat && mechanicLng) {
             addMechanicMarker(mechanicLat, mechanicLng);
+            fetchRoute(mechanicLng, mechanicLat, customerLng, customerLat);
           }
         });
       } catch (err) {
@@ -108,7 +231,7 @@ const LocationMap = ({
     };
   }, [customerLat, customerLng]);
 
-  // Update mechanic marker when position changes
+  // Update mechanic marker and route when position changes
   useEffect(() => {
     if (!map.current || !showMechanic) return;
 
@@ -119,16 +242,9 @@ const LocationMap = ({
         addMechanicMarker(mechanicLat, mechanicLng);
       }
 
-      // Fit bounds to show both markers
-      if (customerMarker.current && mechanicMarker.current) {
-        const bounds = new mapboxgl.LngLatBounds()
-          .extend([customerLng, customerLat])
-          .extend([mechanicLng, mechanicLat]);
-
-        map.current.fitBounds(bounds, {
-          padding: 60,
-          maxZoom: 15,
-        });
+      // Update route when mechanic position changes
+      if (map.current.loaded()) {
+        fetchRoute(mechanicLng, mechanicLat, customerLng, customerLat);
       }
     }
   }, [mechanicLat, mechanicLng, showMechanic, customerLat, customerLng]);
@@ -196,6 +312,24 @@ const LocationMap = ({
         </div>
       )}
       <div ref={mapContainer} className="h-48 w-full" />
+      
+      {/* Route info overlay */}
+      {routeInfo && (
+        <div className="absolute bottom-2 left-2 bg-background/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg border border-border">
+          <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-1.5 text-accent">
+              <Clock className="w-4 h-4" />
+              <span className="font-medium">{routeInfo.duration} min</span>
+            </div>
+            <div className="w-px h-4 bg-border" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Navigation className="w-4 h-4" />
+              <span>{routeInfo.distance} km</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <style>{`
         @keyframes pulse {
           0% {
