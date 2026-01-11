@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import LocationMap from "@/components/LocationMap";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -325,19 +326,21 @@ const TrackRequest = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="font-medium text-foreground">{request.location_address}</p>
-                  {request.location_lat && request.location_lng && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      GPS: {request.location_lat}, {request.location_lng}
-                    </p>
-                  )}
-                  {/* Mock Map */}
-                  <div className="mt-4 rounded-xl bg-secondary/50 h-32 flex items-center justify-center border border-border">
-                    <div className="text-center text-muted-foreground">
-                      <MapPin className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm">Map view coming soon</p>
+                  <p className="font-medium text-foreground mb-3">{request.location_address}</p>
+                  {request.location_lat && request.location_lng ? (
+                    <LocationMap
+                      customerLat={Number(request.location_lat)}
+                      customerLng={Number(request.location_lng)}
+                      showMechanic={request.status === "accepted" || request.status === "in_progress"}
+                    />
+                  ) : (
+                    <div className="rounded-xl bg-secondary/50 h-48 flex items-center justify-center border border-border">
+                      <div className="text-center text-muted-foreground">
+                        <MapPin className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-sm">Location not available</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
 
