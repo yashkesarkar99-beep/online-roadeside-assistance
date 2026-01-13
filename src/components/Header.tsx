@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Phone, Menu, X, User, LogOut } from "lucide-react";
+import { MapPin, Phone, Menu, X, User, LogOut, Shield, Wrench } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isAdmin, isMechanic } = useUserRole();
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,6 +73,18 @@ const Header = () => {
                     <User className="w-4 h-4 mr-2" />
                     My Requests
                   </DropdownMenuItem>
+                  {isMechanic && (
+                    <DropdownMenuItem onClick={() => navigate("/mechanic")}>
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Mechanic Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate("/admin")}>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="w-4 h-4 mr-2" />
@@ -125,6 +139,26 @@ const Header = () => {
                     <User className="w-4 h-4 mr-2" />
                     My Requests
                   </Button>
+                  {isMechanic && (
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => { setIsMenuOpen(false); navigate("/mechanic"); }}
+                    >
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Mechanic Dashboard
+                    </Button>
+                  )}
+                  {isAdmin && (
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => { setIsMenuOpen(false); navigate("/admin"); }}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Admin Dashboard
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     className="justify-start"
