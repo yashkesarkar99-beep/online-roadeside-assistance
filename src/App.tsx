@@ -8,6 +8,8 @@ import RequestAssistance from "./pages/RequestAssistance";
 import TrackRequest from "./pages/TrackRequest";
 import Auth from "./pages/Auth";
 import MyRequests from "./pages/MyRequests";
+import AdminDashboard from "./pages/AdminDashboard";
+import MechanicDashboard from "./pages/MechanicDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,8 @@ const App = () => (
           <Route path="/track/:requestId" element={<TrackRequest />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/my-requests" element={<MyRequests />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/mechanic" element={<MechanicDashboard />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
