@@ -6,8 +6,10 @@ import LocationMap from "@/components/LocationMap";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { useMechanicTracking } from "@/hooks/useMechanicTracking";
 import {
   MapPin,
   Phone,
@@ -172,6 +174,15 @@ const TrackRequest = () => {
   const ServiceIcon = serviceInfo.icon;
   const statusInfo = statusConfig[request.status];
 
+  // Enable mechanic tracking when request is accepted or in progress
+  const shouldTrackMechanic = request.status === "accepted" || request.status === "in_progress";
+  const { mechanicPosition, isArrived, progress } = useMechanicTracking({
+    customerLat: Number(request.location_lat) || 0,
+    customerLng: Number(request.location_lng) || 0,
+    isTracking: shouldTrackMechanic && !!request.location_lat && !!request.location_lng,
+    simulatedSpeed: 0.8,
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -328,11 +339,26 @@ const TrackRequest = () => {
                 <CardContent>
                   <p className="font-medium text-foreground mb-3">{request.location_address}</p>
                   {request.location_lat && request.location_lng ? (
-                    <LocationMap
-                      customerLat={Number(request.location_lat)}
-                      customerLng={Number(request.location_lng)}
-                      showMechanic={request.status === "accepted" || request.status === "in_progress"}
-                    />
+                    <>
+                      <LocationMap
+                        customerLat={Number(request.location_lat)}
+                        customerLng={Number(request.location_lng)}
+                        mechanicLat={mechanicPosition?.lat}
+                        mechanicLng={mechanicPosition?.lng}
+                        showMechanic={shouldTrackMechanic && !!mechanicPosition}
+                      />
+                      {shouldTrackMechanic && mechanicPosition && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {isArrived ? "Mechanic has arrived!" : "Mechanic en route..."}
+                            </span>
+                            <span className="font-medium text-accent">{progress}%</span>
+                          </div>
+                          <Progress value={progress} className="h-2" />
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="rounded-xl bg-secondary/50 h-48 flex items-center justify-center border border-border">
                       <div className="text-center text-muted-foreground">
