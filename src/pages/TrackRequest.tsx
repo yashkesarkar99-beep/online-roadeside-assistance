@@ -75,6 +75,20 @@ const TrackRequest = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Calculate tracking values before the hook (hooks must be called unconditionally)
+  const shouldTrackMechanic = request?.status === "accepted" || request?.status === "in_progress";
+  const customerLat = Number(request?.location_lat) || 0;
+  const customerLng = Number(request?.location_lng) || 0;
+  const isTrackingEnabled = shouldTrackMechanic && !!request?.location_lat && !!request?.location_lng;
+
+  // Hook must be called unconditionally (before any early returns)
+  const { mechanicPosition, isArrived, progress } = useMechanicTracking({
+    customerLat,
+    customerLng,
+    isTracking: isTrackingEnabled,
+    simulatedSpeed: 0.8,
+  });
+
   useEffect(() => {
     if (!requestId) {
       setError("No request ID provided");
@@ -173,15 +187,6 @@ const TrackRequest = () => {
   };
   const ServiceIcon = serviceInfo.icon;
   const statusInfo = statusConfig[request.status];
-
-  // Enable mechanic tracking when request is accepted or in progress
-  const shouldTrackMechanic = request.status === "accepted" || request.status === "in_progress";
-  const { mechanicPosition, isArrived, progress } = useMechanicTracking({
-    customerLat: Number(request.location_lat) || 0,
-    customerLng: Number(request.location_lng) || 0,
-    isTracking: shouldTrackMechanic && !!request.location_lat && !!request.location_lng,
-    simulatedSpeed: 0.8,
-  });
 
   return (
     <div className="min-h-screen bg-background">
