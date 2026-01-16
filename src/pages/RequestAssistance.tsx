@@ -62,6 +62,7 @@ type FormValues = z.infer<typeof formSchema>;
 const RequestAssistance = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [trackingToken, setTrackingToken] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { createRequest, isLoading: isSubmitting } = useCreateAssistanceRequest();
@@ -137,6 +138,7 @@ const RequestAssistance = () => {
 
     if (result) {
       setRequestId(result.id);
+      setTrackingToken(result.tracking_token);
       setIsSuccess(true);
       toast({
         title: "Request Submitted Successfully!",
@@ -176,12 +178,13 @@ const RequestAssistance = () => {
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button variant="hero" onClick={() => requestId && navigate(`/track/${requestId}`)}>
+                  <Button variant="hero" onClick={() => requestId && trackingToken && navigate(`/track/${requestId}/${trackingToken}`)}>
                     Track Your Request
                   </Button>
                   <Button variant="outline" onClick={() => {
                     setIsSuccess(false);
                     setRequestId(null);
+                    setTrackingToken(null);
                     form.reset();
                   }}>
                     Submit Another Request
