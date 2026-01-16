@@ -29,11 +29,16 @@ export interface CreateRequestData {
   description?: string;
 }
 
+export interface CreateRequestResult {
+  id: string;
+  tracking_token: string;
+}
+
 export const useCreateAssistanceRequest = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createRequest = async (data: CreateRequestData): Promise<AssistanceRequest | null> => {
+  const createRequest = async (data: CreateRequestData): Promise<CreateRequestResult | null> => {
     setIsLoading(true);
     setError(null);
 
@@ -56,7 +61,7 @@ export const useCreateAssistanceRequest = () => {
           issue_description: data.description || null,
           user_id: session?.session?.user?.id || null,
         })
-        .select()
+        .select("id, tracking_token")
         .single();
 
       if (insertError) {
@@ -65,7 +70,8 @@ export const useCreateAssistanceRequest = () => {
         return null;
       }
 
-      return result;
+      // Return id and tracking_token for secure anonymous tracking
+      return { id: result.id, tracking_token: result.tracking_token };
     } catch (err) {
       console.error("Unexpected error:", err);
       setError("An unexpected error occurred");

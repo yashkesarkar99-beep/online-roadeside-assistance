@@ -69,7 +69,7 @@ const statusConfig: Record<RequestStatus, { label: string; color: string; descri
 };
 
 const TrackRequest = () => {
-  const { requestId } = useParams<{ requestId: string }>();
+  const { requestId, token } = useParams<{ requestId: string; token?: string }>();
   const navigate = useNavigate();
   const [request, setRequest] = useState<AssistanceRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +97,43 @@ const TrackRequest = () => {
     }
 
     const fetchRequest = async () => {
+      // If we have a tracking token, use the secure edge function
+      if (token) {
+        try {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-request-by-token`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ requestId, trackingToken: token }),
+            }
+          );
+
+          if (!response.ok) {
+            console.error("Error fetching request via token");
+            setError("Request not found or invalid tracking link");
+            setIsLoading(false);
+            return;
+          }
+
+          const result = await response.json();
+          if (result.data) {
+            setRequest(result.data);
+          } else {
+            setError("Request not found");
+          }
+        } catch (err) {
+          console.error("Error fetching request:", err);
+          setError("Request not found");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // For authenticated users, use direct Supabase query
       const { data, error: fetchError } = await supabase
         .from("assistance_requests")
         .select("*")
@@ -114,7 +151,8 @@ const TrackRequest = () => {
 
     fetchRequest();
 
-    // Set up realtime subscription for this specific request
+    // Set up realtime subscription for this specific request (only for authenticated users)
+    // Anonymous users with tokens won't receive realtime updates for security
     const channel = supabase
       .channel(`request-${requestId}`)
       .on(
@@ -135,7 +173,7 @@ const TrackRequest = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [requestId]);
+  }, [requestId, token]);
 
   if (isLoading) {
     return (

@@ -27,6 +27,7 @@ export type Database = {
           location_lng: number | null
           service_type: Database["public"]["Enums"]["service_type"]
           status: Database["public"]["Enums"]["request_status"]
+          tracking_token: string | null
           updated_at: string
           user_id: string | null
           vehicle_color: string | null
@@ -46,6 +47,7 @@ export type Database = {
           location_lng?: number | null
           service_type: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["request_status"]
+          tracking_token?: string | null
           updated_at?: string
           user_id?: string | null
           vehicle_color?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           location_lng?: number | null
           service_type?: Database["public"]["Enums"]["service_type"]
           status?: Database["public"]["Enums"]["request_status"]
+          tracking_token?: string | null
           updated_at?: string
           user_id?: string | null
           vehicle_color?: string | null
@@ -141,6 +144,10 @@ export type Database = {
         Returns: boolean
       }
       is_mechanic: { Args: { user_uuid: string }; Returns: boolean }
+      verify_tracking_token: {
+        Args: { request_id: string; token: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "mechanic" | "user"
