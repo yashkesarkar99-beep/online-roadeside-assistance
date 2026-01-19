@@ -133,7 +133,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pending_requests_preview: {
+        Row: {
+          contact_name_masked: string | null
+          contact_phone_masked: string | null
+          created_at: string | null
+          id: string | null
+          issue_description: string | null
+          location_area: string | null
+          location_lat_approx: number | null
+          location_lng_approx: number | null
+          service_type: Database["public"]["Enums"]["service_type"] | null
+          status: Database["public"]["Enums"]["request_status"] | null
+          updated_at: string | null
+          vehicle_color: string | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_year: string | null
+        }
+        Insert: {
+          contact_name_masked?: never
+          contact_phone_masked?: never
+          created_at?: string | null
+          id?: string | null
+          issue_description?: never
+          location_area?: never
+          location_lat_approx?: never
+          location_lng_approx?: never
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          updated_at?: string | null
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: string | null
+        }
+        Update: {
+          contact_name_masked?: never
+          contact_phone_masked?: never
+          created_at?: string | null
+          id?: string | null
+          issue_description?: never
+          location_area?: never
+          location_lat_approx?: never
+          location_lng_approx?: never
+          service_type?: Database["public"]["Enums"]["service_type"] | null
+          status?: Database["public"]["Enums"]["request_status"] | null
+          updated_at?: string | null
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
