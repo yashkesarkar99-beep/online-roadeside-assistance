@@ -117,7 +117,13 @@ export const useRealtimeAssistanceRequests = () => {
           table: "assistance_requests",
         },
         (payload) => {
-          console.log("Realtime update:", payload);
+          // Debug logging only in development to prevent info disclosure
+          if (import.meta.env.DEV) {
+            console.log("Realtime update:", { 
+              eventType: payload.eventType, 
+              id: (payload.new as AssistanceRequest)?.id 
+            });
+          }
           
           if (payload.eventType === "INSERT") {
             setRequests((prev) => [payload.new as AssistanceRequest, ...prev]);

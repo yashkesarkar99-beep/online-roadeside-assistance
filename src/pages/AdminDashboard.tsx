@@ -141,14 +141,37 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newRoleEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setIsAssigningRole(true);
     try {
-      // First, find the user by email using auth admin API (would need edge function)
-      // For now, we'll add a note that this needs server-side implementation
-      toast.info("Role assignment requires server-side implementation. Please contact support.");
+      const { data, error } = await supabase.functions.invoke("assign-user-role", {
+        body: { email: newRoleEmail.trim(), role: newRole }
+      });
+
+      if (error) {
+        // Handle specific error messages from the edge function
+        const errorMessage = error.message || "Failed to assign role";
+        toast.error(errorMessage);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success(`Successfully assigned ${newRole} role to ${newRoleEmail}`);
+      setNewRoleEmail("");
+      setNewRole("mechanic");
     } catch (error) {
       console.error("Error assigning role:", error);
-      toast.error("Failed to assign role");
+      toast.error("Failed to assign role. Please try again.");
     } finally {
       setIsAssigningRole(false);
     }

@@ -164,7 +164,10 @@ const TrackRequest = () => {
           filter: `id=eq.${requestId}`,
         },
         (payload) => {
-          console.log("Request updated:", payload);
+          // Debug logging only in development to prevent info disclosure
+          if (import.meta.env.DEV) {
+            console.log("Request updated:", { id: (payload.new as AssistanceRequest)?.id, status: (payload.new as AssistanceRequest)?.status });
+          }
           setRequest(payload.new as AssistanceRequest);
         }
       )
