@@ -30,6 +30,25 @@ import { toast } from "sonner";
 type AssistanceRequest = Database["public"]["Tables"]["assistance_requests"]["Row"];
 type RequestStatus = Database["public"]["Enums"]["request_status"];
 
+// Type for pending request preview (masked data from view)
+type PendingRequestPreview = {
+  id: string;
+  service_type: Database["public"]["Enums"]["service_type"];
+  status: RequestStatus;
+  created_at: string;
+  updated_at: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: string;
+  vehicle_color: string | null;
+  contact_name_masked: string;
+  contact_phone_masked: string;
+  location_area: string;
+  location_lat_approx: number | null;
+  location_lng_approx: number | null;
+  issue_description: string | null;
+};
+
 const serviceTypeLabels: Record<string, { label: string; icon: typeof Wrench }> = {
   flat_tire: { label: "Flat Tire", icon: Wrench },
   battery_jump: { label: "Battery Jump", icon: Battery },
@@ -51,7 +70,7 @@ const MechanicDashboard = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   const { isMechanic, isLoading: roleLoading } = useUserRole();
-  const [pendingRequests, setPendingRequests] = useState<AssistanceRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequestPreview[]>([]);
   const [myRequests, setMyRequests] = useState<AssistanceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
@@ -78,17 +97,32 @@ const MechanicDashboard = () => {
     const fetchRequests = async () => {
       setIsLoading(true);
 
-      // Fetch pending requests
-      const { data: pending, error: pendingError } = await supabase
-        .from("assistance_requests")
-        .select("*")
-        .eq("status", "pending")
-        .order("created_at", { ascending: true });
-
-      if (pendingError) {
-        console.error("Error fetching pending requests:", pendingError);
-      } else {
-        setPendingRequests(pending || []);
+      // Fetch pending requests from edge function (returns masked data for privacy)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-pending-requests`,
+            {
+              method: "GET",
+              headers: {
+                "Authorization": `Bearer ${session.access_token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            setPendingRequests(data.requests || []);
+          } else {
+            console.error("Error fetching pending requests:", await response.text());
+            setPendingRequests([]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching pending requests:", error);
+        setPendingRequests([]);
       }
 
       // Fetch my assigned requests
@@ -189,7 +223,8 @@ const MechanicDashboard = () => {
     return null;
   }
 
-  const RequestCard = ({ request, isAssigned = false }: { request: AssistanceRequest; isAssigned?: boolean }) => {
+  // Card for assigned requests (shows full contact info)
+  const AssignedRequestCard = ({ request }: { request: AssistanceRequest }) => {
     const serviceInfo = serviceTypeLabels[request.service_type] || { label: "Unknown", icon: Wrench };
     const ServiceIcon = serviceInfo.icon;
 
@@ -240,66 +275,114 @@ const MechanicDashboard = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {!isAssigned ? (
+            {request.location_lat && request.location_lng && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openNavigation(Number(request.location_lat), Number(request.location_lng))}
+              >
+                <Navigation className="w-4 h-4 mr-2" />
+                Navigate
+              </Button>
+            )}
+            {request.status === "accepted" && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => handleUpdateStatus(request.id, "in_progress")}
+                disabled={updatingId === request.id}
+              >
+                {updatingId === request.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Play className="w-4 h-4 mr-2" />
+                )}
+                Start Work
+              </Button>
+            )}
+            {request.status === "in_progress" && (
               <Button
                 variant="hero"
                 size="sm"
-                onClick={() => handleAcceptRequest(request.id)}
-                disabled={acceptingId === request.id}
+                onClick={() => handleUpdateStatus(request.id, "completed")}
+                disabled={updatingId === request.id}
               >
-                {acceptingId === request.id ? (
+                {updatingId === request.id ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : (
                   <CheckCircle className="w-4 h-4 mr-2" />
                 )}
-                Accept Request
+                Complete
               </Button>
-            ) : (
-              <>
-                {request.location_lat && request.location_lng && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openNavigation(Number(request.location_lat), Number(request.location_lng))}
-                  >
-                    <Navigation className="w-4 h-4 mr-2" />
-                    Navigate
-                  </Button>
-                )}
-                {request.status === "accepted" && (
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(request.id, "in_progress")}
-                    disabled={updatingId === request.id}
-                  >
-                    {updatingId === request.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Play className="w-4 h-4 mr-2" />
-                    )}
-                    Start Work
-                  </Button>
-                )}
-                {request.status === "in_progress" && (
-                  <Button
-                    variant="hero"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(request.id, "completed")}
-                    disabled={updatingId === request.id}
-                  >
-                    {updatingId === request.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                    )}
-                    Complete
-                  </Button>
-                )}
-              </>
             )}
             <Button variant="ghost" size="sm" onClick={() => navigate(`/track/${request.id}`)}>
               View Details
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Card for pending requests (shows masked contact info for privacy)
+  const PendingRequestCard = ({ request }: { request: PendingRequestPreview }) => {
+    const serviceInfo = serviceTypeLabels[request.service_type] || { label: "Unknown", icon: Wrench };
+    const ServiceIcon = serviceInfo.icon;
+
+    return (
+      <Card className="border-2 border-border hover:border-accent/50 transition-colors">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <ServiceIcon className="w-5 h-5 text-accent" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">{serviceInfo.label}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(request.created_at).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <Badge className={`${statusColors[request.status]} border capitalize`}>
+              {request.status.replace("_", " ")}
+            </Badge>
+          </div>
+
+          <div className="space-y-2 mb-4">
+            <div className="flex items-start gap-2">
+              <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+              <p className="text-sm text-foreground">{request.location_area}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground italic">
+                {request.contact_phone_masked}
+              </span>
+              <span className="text-sm text-muted-foreground">({request.contact_name_masked})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-muted-foreground" />
+              <p className="text-sm text-foreground">
+                {request.vehicle_year} {request.vehicle_make} {request.vehicle_model}
+                {request.vehicle_color && ` (${request.vehicle_color})`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="hero"
+              size="sm"
+              onClick={() => handleAcceptRequest(request.id)}
+              disabled={acceptingId === request.id}
+            >
+              {acceptingId === request.id ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              )}
+              Accept Request
             </Button>
           </div>
         </CardContent>
@@ -350,7 +433,7 @@ const MechanicDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {myRequests.map((request) => (
-                          <RequestCard key={request.id} request={request} isAssigned />
+                          <AssignedRequestCard key={request.id} request={request} />
                         ))}
                       </div>
                     )}
@@ -375,7 +458,7 @@ const MechanicDashboard = () => {
                     ) : (
                       <div className="space-y-4">
                         {pendingRequests.map((request) => (
-                          <RequestCard key={request.id} request={request} />
+                          <PendingRequestCard key={request.id} request={request} />
                         ))}
                       </div>
                     )}
