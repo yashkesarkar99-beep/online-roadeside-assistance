@@ -77,21 +77,6 @@ const MechanicDashboard = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || roleLoading) return;
-
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    if (!isMechanic) {
-      navigate("/");
-      toast.error("Access denied. Mechanic privileges required.");
-      return;
-    }
-  }, [user, isMechanic, authLoading, roleLoading, navigate]);
-
-  useEffect(() => {
     if (!isMechanic || !user) return;
 
     const fetchRequests = async () => {
@@ -219,9 +204,7 @@ const MechanicDashboard = () => {
     );
   }
 
-  if (!isMechanic) {
-    return null;
-  }
+  // Route access is enforced at the router level via <RequireRole />.
 
   // Card for assigned requests (shows full contact info)
   const AssignedRequestCard = ({ request }: { request: AssistanceRequest }) => {

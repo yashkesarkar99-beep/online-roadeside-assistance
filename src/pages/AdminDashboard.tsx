@@ -50,7 +50,7 @@ const statusColors: Record<RequestStatus, string> = {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
   const { isAdmin, isLoading: roleLoading } = useUserRole();
   const [requests, setRequests] = useState<AssistanceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,21 +67,6 @@ const AdminDashboard = () => {
   const [newRoleEmail, setNewRoleEmail] = useState("");
   const [newRole, setNewRole] = useState<"admin" | "mechanic">("mechanic");
   const [isAssigningRole, setIsAssigningRole] = useState(false);
-
-  useEffect(() => {
-    if (authLoading || roleLoading) return;
-
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-
-    if (!isAdmin) {
-      navigate("/");
-      toast.error("Access denied. Admin privileges required.");
-      return;
-    }
-  }, [user, isAdmin, authLoading, roleLoading, navigate]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -194,9 +179,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
+  // Route access is enforced at the router level via <RequireRole />.
 
   return (
     <div className="min-h-screen bg-background">
