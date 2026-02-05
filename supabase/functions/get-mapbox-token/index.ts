@@ -5,26 +5,11 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_MAX = 100; // Max requests per window
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour in milliseconds
 
-// Allowed origins for CORS (restrict to your domain)
-const getAllowedOrigins = (): string[] => {
-  // Add your production domains here
-  return [
-    "https://online-roadeside-assistance.lovable.app",
-    "https://id-preview--24bbc85c-4987-4e1c-94d3-83a00ddb3a42.lovable.app",
-    "http://localhost:5173",
-    "http://localhost:3000"
-  ];
-};
-
-const getCorsHeaders = (origin: string | null): Record<string, string> => {
-  const allowedOrigins = getAllowedOrigins();
-  const isAllowed = origin && allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/:\d+$/, '')));
-  
-  return {
-    "Access-Control-Allow-Origin": isAllowed && origin ? origin : allowedOrigins[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-  };
+// CORS headers - allow all origins for development flexibility
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number } => {
@@ -55,9 +40,6 @@ const checkRateLimit = (clientIp: string): { allowed: boolean; remaining: number
 };
 
 serve(async (req) => {
-  const origin = req.headers.get("origin");
-  const corsHeaders = getCorsHeaders(origin);
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
