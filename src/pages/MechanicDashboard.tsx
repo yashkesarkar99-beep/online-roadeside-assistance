@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { sendSmsNotification } from "@/utils/smsNotifications";
+import NotificationHistory from "@/components/mechanic/NotificationHistory";
 
 type AssistanceRequest = Database["public"]["Tables"]["assistance_requests"]["Row"];
 type RequestStatus = Database["public"]["Enums"]["request_status"];
@@ -182,7 +183,7 @@ const MechanicDashboard = () => {
           .single();
 
         const mechanicName = profile?.full_name || "A mechanic";
-        const smsResult = await sendSmsNotification(contact_phone, "dispatched", mechanicName);
+        const smsResult = await sendSmsNotification(contact_phone, "dispatched", mechanicName, requestId);
         if (smsResult.success) {
           toast.success("Customer notified via SMS");
         } else {
@@ -220,7 +221,7 @@ const MechanicDashboard = () => {
           .single();
 
         const mechanicName = profile?.full_name || "A mechanic";
-        const smsResult = await sendSmsNotification(contact_phone, "arrived", mechanicName);
+        const smsResult = await sendSmsNotification(contact_phone, "arrived", mechanicName, requestId);
         if (smsResult.success) {
           toast.success("Customer notified via SMS");
         } else {
@@ -341,6 +342,8 @@ const MechanicDashboard = () => {
               View Details
             </Button>
           </div>
+
+          <NotificationHistory requestId={request.id} />
         </CardContent>
       </Card>
     );

@@ -5,11 +5,12 @@ type SmsType = "dispatched" | "arrived";
 export const sendSmsNotification = async (
   to: string,
   type: SmsType,
-  mechanicName?: string
+  mechanicName?: string,
+  requestId?: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const { data, error } = await supabase.functions.invoke("send-sms", {
-      body: { to, type, mechanicName },
+      body: { to, type, mechanicName, requestId },
     });
 
     if (error) {
