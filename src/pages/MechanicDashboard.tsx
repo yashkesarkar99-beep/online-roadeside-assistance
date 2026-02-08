@@ -26,6 +26,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { toast } from "sonner";
+import { sendSmsNotification } from "@/utils/smsNotifications";
 
 type AssistanceRequest = Database["public"]["Tables"]["assistance_requests"]["Row"];
 type RequestStatus = Database["public"]["Enums"]["request_status"];
@@ -154,7 +155,7 @@ const MechanicDashboard = () => {
     if (!user) return;
 
     setAcceptingId(requestId);
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from("assistance_requests")
       .update({
         status: "accepted",
@@ -162,32 +163,70 @@ const MechanicDashboard = () => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", requestId)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("contact_phone, contact_name");
 
     if (error) {
       console.error("Error accepting request:", error);
       toast.error("Failed to accept request. It may have been taken by another mechanic.");
     } else {
       toast.success("Request accepted! Navigate to the customer location.");
+
+      // Send SMS notification to customer
+      if (updatedRows && updatedRows.length > 0) {
+        const { contact_phone } = updatedRows[0];
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .single();
+
+        const mechanicName = profile?.full_name || "A mechanic";
+        const smsResult = await sendSmsNotification(contact_phone, "dispatched", mechanicName);
+        if (smsResult.success) {
+          toast.success("Customer notified via SMS");
+        } else {
+          console.error("SMS failed:", smsResult.error);
+        }
+      }
     }
     setAcceptingId(null);
   };
 
   const handleUpdateStatus = async (requestId: string, newStatus: RequestStatus) => {
     setUpdatingId(requestId);
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from("assistance_requests")
       .update({
         status: newStatus,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", requestId);
+      .eq("id", requestId)
+      .select("contact_phone, contact_name");
 
     if (error) {
       console.error("Error updating status:", error);
       toast.error("Failed to update status");
     } else {
       toast.success(`Request marked as ${newStatus.replace("_", " ")}`);
+
+      // Send SMS when mechanic arrives (starts work)
+      if (newStatus === "in_progress" && updatedRows && updatedRows.length > 0) {
+        const { contact_phone } = updatedRows[0];
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user!.id)
+          .single();
+
+        const mechanicName = profile?.full_name || "A mechanic";
+        const smsResult = await sendSmsNotification(contact_phone, "arrived", mechanicName);
+        if (smsResult.success) {
+          toast.success("Customer notified via SMS");
+        } else {
+          console.error("SMS failed:", smsResult.error);
+        }
+      }
     }
     setUpdatingId(null);
   };
