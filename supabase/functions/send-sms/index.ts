@@ -75,7 +75,7 @@ serve(async (req) => {
   }
 
   // Parse request body
-  let body: { to: string; type: "dispatched" | "arrived"; mechanicName?: string };
+  let body: { to: string; type: "dispatched" | "arrived"; mechanicName?: string; requestId?: string };
   try {
     body = await req.json();
   } catch {
@@ -85,7 +85,7 @@ serve(async (req) => {
     );
   }
 
-  const { to, type, mechanicName } = body;
+  const { to, type, mechanicName, requestId } = body;
 
   if (!to || !type) {
     return new Response(
@@ -152,6 +152,19 @@ serve(async (req) => {
 
     if (!twilioResponse.ok) {
       console.error("Twilio API error:", JSON.stringify(result));
+
+      // Log failed SMS
+      if (requestId) {
+        await serviceClient.from("sms_notifications").insert({
+          request_id: requestId,
+          mechanic_id: userId,
+          recipient_phone: to,
+          notification_type: type,
+          status: "failed",
+          error_message: result.message || "Unknown Twilio error",
+        });
+      }
+
       return new Response(
         JSON.stringify({ error: "Failed to send SMS", details: result.message }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -159,6 +172,19 @@ serve(async (req) => {
     }
 
     console.log("SMS sent successfully:", result.sid);
+
+    // Log successful SMS
+    if (requestId) {
+      await serviceClient.from("sms_notifications").insert({
+        request_id: requestId,
+        mechanic_id: userId,
+        recipient_phone: to,
+        notification_type: type,
+        message_sid: result.sid,
+        status: "sent",
+      });
+    }
+
     return new Response(
       JSON.stringify({ success: true, messageSid: result.sid }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

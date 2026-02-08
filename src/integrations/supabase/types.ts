@@ -110,6 +110,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_notifications: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          mechanic_id: string
+          message_sid: string | null
+          notification_type: string
+          recipient_phone: string
+          request_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mechanic_id: string
+          message_sid?: string | null
+          notification_type: string
+          recipient_phone: string
+          request_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mechanic_id?: string
+          message_sid?: string | null
+          notification_type?: string
+          recipient_phone?: string
+          request_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "assistance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "pending_requests_preview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
