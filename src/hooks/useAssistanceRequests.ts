@@ -31,7 +31,6 @@ export interface CreateRequestData {
 
 export interface CreateRequestResult {
   id: string;
-  tracking_token: string;
 }
 
 export const useCreateAssistanceRequest = () => {
@@ -61,7 +60,7 @@ export const useCreateAssistanceRequest = () => {
           issue_description: data.description || null,
           user_id: session?.session?.user?.id || null,
         })
-        .select("id, tracking_token")
+        .select("id")
         .single();
 
       if (insertError) {
@@ -70,8 +69,7 @@ export const useCreateAssistanceRequest = () => {
         return null;
       }
 
-      // Return id and tracking_token for secure anonymous tracking
-      return { id: result.id, tracking_token: result.tracking_token };
+      return { id: result.id };
     } catch (err) {
       console.error("Unexpected error:", err);
       setError("An unexpected error occurred");
