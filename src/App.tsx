@@ -24,7 +24,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/request" element={<RequestAssistance />} />
-          <Route path="/track/:requestId/:token?" element={<TrackRequest />} />
+          <Route path="/track/:requestId" element={<TrackRequest />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/my-requests" element={<MyRequests />} />
           <Route
