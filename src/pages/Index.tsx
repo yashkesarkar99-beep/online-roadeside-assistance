@@ -74,7 +74,7 @@ const Index = () => {
             onClick={() => navigate("/request")}
           >
             <Zap className="w-5 h-5 mr-2" />
-            Confirm Request
+            Request Assistance Now
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
 
