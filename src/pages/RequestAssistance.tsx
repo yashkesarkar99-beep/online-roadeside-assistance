@@ -495,7 +495,7 @@ const RequestAssistance = () => {
                       </>
                     ) : (
                       <>
-                        Submit Request for Help
+                        Submit Request
                         <AlertTriangle className="w-5 h-5" />
                       </>
                     )}
