@@ -281,7 +281,7 @@ const RequestAssistance = () => {
                           <FormItem>
                             <FormLabel>Full Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="John Doe" {...field} />
+                              <Input placeholder="Name" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
