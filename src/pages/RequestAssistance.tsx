@@ -328,24 +328,13 @@ const RequestAssistance = () => {
                           <FormItem>
                             <FormLabel>Location / Address</FormLabel>
                             <FormControl>
-                              <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                  <Input 
-                                    placeholder="Enter your address or landmark" 
-                                    className="pl-10"
-                                    {...field} 
-                                  />
-                                </div>
-                                <Button 
-                                  type="button" 
-                                  variant="outline"
-                                  onClick={handleGetLocation}
-                                  className="gap-2"
-                                >
-                                  <Navigation className="w-4 h-4" />
-                                  <span className="hidden sm:inline">Use GPS</span>
-                                </Button>
+                              <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input 
+                                  placeholder="Enter your address or landmark" 
+                                  className="pl-10"
+                                  {...field} 
+                                />
                               </div>
                             </FormControl>
                             <FormMessage />
