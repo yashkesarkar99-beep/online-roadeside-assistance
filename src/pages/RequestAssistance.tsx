@@ -372,7 +372,7 @@ const RequestAssistance = () => {
                           <FormItem>
                               <FormLabel>Make</FormLabel>
                               <FormControl>
-                                <Input placeholder="Toyota" {...field} />
+                                <Input placeholder="" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
